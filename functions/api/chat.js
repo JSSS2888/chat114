@@ -80,12 +80,12 @@ export async function onRequest(context) {
       const user = await db.prepare("SELECT username FROM users WHERE id = ?").bind(session.user_id).first();
       const now = Date.now();
 
-      await db.prepare("INSERT INTO messages (user_id, username, text, created_at) VALUES (?, ?, ?, ?)")
-              .bind(session.user_id, user.username, text, now).run();
+      const newMsg = await db.prepare("INSERT INTO messages (user_id, username, text, created_at) VALUES (?, ?, ?, ?) RETURNING *")
+              .bind(session.user_id, user.username, text, now).first();
 
       await db.prepare("DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY id DESC LIMIT 50)").run();
 
-      return json({ success: true });
+      return json({ success: true, message: newMsg });
     }
 
     return json({ error: '未知请求' }, 404);
